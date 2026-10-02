@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌹 Rosa de Saron — COBRADOR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cobrador: '#047857',
+                        sucesso: '#10B981',
+                        perigo: '#EF4444',
+                        aviso: '#F59E0B',
+                        atrasado: '#DC2626',
+                        pix: '#7E22CE',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .aba { display: none; }
+        .mostra { display: block; }
+        .cartao { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1rem; }
+        .campo { border: 1px solid #ccc; border-radius: 6px; padding: 10px; width: 100%; margin-top: 4px; margin-bottom: 12px; }
+        .btn { padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
+        .btn-verde { background: #10B981; color: white; }
+        .btn-cinza { background: #6B7280; color: white; }
+        .btn-azul { background: #3B82F6; color: white; }
+        .btn-pix { background: #7E22CE; color: white; }
+        .btn-vermelho { background: #EF4444; color: white; }
+        .login-fundo { background: linear-gradient(135deg, #047857 0%, #10B981 100%); }
+        .status-atrasado { background: #FEE2E2; color: #991B1B; }
+        .status-pago { background: #D1FAE5; color: #065F46; }
+        .status-pendente { background: #FEF3C7; color: #92400E; }
+        .status-pix { background: #F3E8FF; color: #6B21A8; }
+        .sinc-indicador { position: fixed; top: 10px; right: 10px; z-index: 100; }
+        .texto-observacao { background: #F9FAFB; border-left: 3px solid #7E22CE; padding: 8px 12px; border-radius: 0 6px 6px 0; margin: 8px 0; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<div id="indicadorSinc" class="sinc-indicador hidden">
+    <span class="bg-white px-3 py-1 rounded-full shadow text-sm flex items-center gap-2">
+        <i class="fa-solid fa-sync fa-spin text-cobrador"></i> Atualizado
+    </span>
+</div>
+
+<!-- TELA DE LOGIN -->
+<div id="telaLogin" class="login-fundo min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <h1 class="text-center text-3xl font-bold text-cobrador mb-2">🌹 COBRADOR</h1>
+        <p class="text-center text-gray-500 mb-8">Acesso Exclusivo</p>
+        
+        <div>
+            <label class="block font-medium">Seu E-mail</label>
+            <input type="email" id="inpEmail" class="campo" placeholder="seu@email.com">
+            
+            <label class="block font-medium">Sua Senha</label>
+            <input type="password" id="inpSenha" class="campo" placeholder="Digite sua senha">
+            
+            <button onclick="entrar()" class="btn bg-cobrador text-white w-full text-lg mt-2">🔐 Entrar</button>
+            
+            <p id="erroLogin" class="text-red-600 mt-3 text-center hidden">❌ E-mail ou senha incorretos!</p>
+            
+            <div class="mt-4 p-3 bg-gray-100 rounded text-sm text-gray-600">
+                💡 Peça os dados de acesso ao Administrador
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CABEÇALHO -->
+<header id="cabCobrador" class="bg-cobrador text-white py-4 hidden">
+    <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center">
+            <h1 class="text-xl font-bold">🌹 Cobrador — <span id="nomeCob"></span></h1>
+            <button onclick="sair()" class="bg-white/20 px-4 py-2 rounded">
+                <i class="fa-solid fa-right-from-bracket"></i> Sair
+            </button>
+        </div>
+        <nav class="flex flex-wrap gap-2 mt-4">
+            <button onclick="mostrarAba('clientes')" class="bg-white/20 px-3 py-2 rounded">Meus Clientes</button>
+            <button onclick="mostrarAba('gastos')" class="bg-white/20 px-3 py-2 rounded">Relatar Gastos</button>
+        </nav>
+    </div>
+</header>
+
+<!-- CONTEÚDO PRINCIPAL -->
+<main id="principal" class="container mx-auto px-4 py-6 hidden">
+
+    <!-- ========== ABA: MEUS CLIENTES ========== -->
+    <section id="aba-clientes" class="aba">
+        <h2 class="text-xl font-bold mb-4">📋 Meus Clientes</h2>
+        <div id="listaMeusClientesBox" class="cartao">
+            <div id="listaMeusClientes"></div>
+        </div>
+        
+        <!-- FICHA DO CLIENTE -->
+        <div id="fichaCobradorCliente" class="cartao hidden mt-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-cobrador">📄 Ficha do Cliente</h3>
+                <button onclick="fecharFicha()" class="btn btn-cinza py-2 px-3">
+                    <i class="fa-solid fa-xmark"></i> Voltar
+                </button>
+            </div>
+            <div id="conteudoFicha"></div>
+        </div>
+    </section>
+
+    <!-- ========== ABA: RELATAR GASTOS ========== -->
+    <section id="aba-gastos" class="aba">
+        <h2 class="text-xl font-bold mb-4">📝 Relatar Gastos de Viagem/Atendimento</h2>
+        
+        <div class="cartao">
+            <h3 class="font-bold mb-3">➕ Novo Gasto</h3>
+            
+            <label class="font-medium">Data</label>
+            <input type="date" id="gastoData" class="campo">
+            
+            <label class="font-medium">Tipo de Gasto</label>
+            <select id="gastoTipo" class="campo">
+                <option value="">-- Selecione --</option>
+                <option value="Abastecimento">⛽ Abastecimento</option>
+                <option value="Hospedagem">🏨 Hospedagem</option>
+                <option value="Alimentação">🍽️ Alimentação</option>
+                <option value="Transporte">🚌 Transporte</option>
+                <option value="Outros">📋 Outros</option>
+            </select>
+            
+            <label class="font-medium">Descrição / Justificativa *</label>
+            <textarea id="gastoDesc" class="campo" rows="3" placeholder="Ex: Abastecimento para atendimento aos bairros Cidade Jardim e Centro..."></textarea>
+            
+            <label class="font-medium">Valor R$</label>
+            <input type="number" step="0.01" id="gastoValor" class="campo" placeholder="0,00">
+            
+            <label class="font-medium">Observações (recibo, nota fiscal, etc)</label>
+            <textarea id="gastoObs" class="campo" rows="2" placeholder="Nº do recibo, foto enviada, nome do estabelecimento..."></textarea>
+            
+            <button onclick="registrarGasto()" class="btn btn-verde w-full mt-2">✅ Enviar para Aprovação</button>
+        </div>
+
+        <div class="cartao mt-6">
+            <h3 class="font-bold mb-3">📋 Meus Gastos Enviados</h3>
+            <div id="listaMeusGastos"></div>
+        </div>
+    </section>
+
+</main>
+
+<script>
+const CHAVE_NUVEM = 'rosa_saron_base_unica'; // MESMA CHAVE = DADOS COMPARTILHADOS
+let usuario = null, clienteAtual = null;
+let dados = { cobradores:[], clientes:[], gastosCobradores:[], movimentos:[] };
+
+// ========== SINCRONIZAÇÃO ==========
+function mostrarSinc() {
+    const el = document.getElementById('indicadorSinc');
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 1500);
+}
+
+function salvarDados() {
+    localStorage.setItem(CHAVE_NUVEM, JSON.stringify(dados));
+    mostrarSinc();
+}
+
+function carregarDados() {
+    const s = localStorage.getItem(CHAVE_NUVEM);
+    if (s) dados = JSON.parse(s);
+    if (!dados.cobradores) dados.cobradores = [];
+    if (!dados.clientes) dados.clientes = [];
+    if (!dados.gastosCobradores) dados.gastosCobradores = [];
+    if (!dados.movimentos) dados.movimentos = [];
+}
+
+window.addEventListener('storage', (e) => {
+    if (e.key === CHAVE_NUVEM && e.newValue) {
+        dados = JSON.parse(e.newValue);
+        mostrarSinc();
+        listarMeusClientes();
+        listarMeusGastos();
+        if (clienteAtual) abrirFichaCobrador(clienteAtual.id);
+    }
+});
+
+// ========== LOGIN ==========
+function entrar() {
+    carregarDados();
+    const email = document.getElementById('inpEmail').value.trim().toLowerCase();
+    const senha = document.getElementById('inpSenha').value;
+    const cob = dados.cobradores.find(c => c.email.trim().toLowerCase() === email && c.senha === senha);
+    if (cob) {
+        usuario = { id: cob.id, nome: cob.nome };
+        prosseguir();
+    } else {
+        document.getElementById('erroLogin').classList.remove('hidden');
+    }
+}
+
+function prosseguir() {
+    document.getElementById('telaLogin').classList.add('hidden');
+    document.getElementById('principal').classList.remove('hidden');
+    document.getElementById('cabCobrador').classList.remove('hidden');
+    document.getElementById('nomeCob').textContent = usuario.nome;
+    mostrarAba('clientes');
+}
+
+function sair() {
+    usuario = null; clienteAtual = null;
+    document.getElementById('telaLogin').classList.remove('hidden');
+    document.getElementById('principal').classList.add('hidden');
+    document.getElementById('cabCobrador').classList.add('hidden');
+    document.getElementById('inpEmail').value = '';
+    document.getElementById('inpSenha').value = '';
+}
+
+// ========== NAVEGAÇÃO ==========
+function mostrarAba(nome) {
+    clienteAtual = null;
+    document.querySelectorAll('.aba').forEach(a => a.classList.remove('mostra'));
+    document.getElementById(`aba-${nome}`).classList.add('mostra');
+    if (nome === 'clientes') listarMeusClientes();
+    if (nome === 'gastos') {
+        document.getElementById('gastoData').value = new Date().toISOString().split('T')[0];
+        listarMeusGastos();
+    }
+}
+
+// ========== LISTAR CLIENTES ==========
+function listarMeusClientes() {
+    carregarDados();
+    const div = document.getElementById('listaMeusClientes');
+    const meus = dados.clientes.filter(c => Number(c.cobradorId) === usuario.id);
+    if (!meus.length) return div.innerHTML = '<p class="text-gray-500">Nenhum cliente atribuído pelo administrador.</p>';
+    div.innerHTML = '<div class="space-y-3">';
+    meus.forEach(c => {
+        const atraso = (c.parcelas||[]).filter(p=>!p.pago && new Date(p.dataVenc)<new Date()).length;
+        div.innerHTML += `
+        <div class="border p-4 rounded-lg bg-green-50 cursor-pointer hover:bg-green-100" onclick="abrirFichaCobrador(${c.id})">
+            <h4 class="font-bold text-lg">${c.nome}</h4>
+            <p class="text-sm">Contrato: ${c.contrato}</p>
+            <p class="text-sm">Endereço: ${c.endereco||'—'}</p>
+            <p class="font-bold text-cobrador mt-1">Valor: R$ ${c.valor.toFixed(2)}</p>
+            ${atraso?`<p class="text-atrasado font-bold text-sm mt-1">⚠️ ${atraso} parcela(s) em atraso</p>`:''}
+            <p class="text-sm text-cobrador mt-2">👉 Clique para ver vencimentos e dar baixa</p>
+        </div>`;
+    });
+    div.innerHTML += '</div>';
+}
+
+// ========== FICHA DO CLIENTE ==========
+function abrirFichaCobrador(id) {
+    carregarDados();
+    clienteAtual = dados.clientes.find(c=>c.id===id);
+    if (!clienteAtual) return;
+    document.getElementById('fichaCobradorCliente').classList.remove('hidden');
+    document.getElementById('listaMeusClientesBox').classList.add('hidden');
+    renderizarFicha();
+}
+
+function fecharFicha() {
+    clienteAtual = null;
+    document.getElementById('fichaCobradorCliente').classList.add('hidden');
+    document.getElementById('listaMeusClientesBox').classList.remove('hidden');
+    listarMeusClientes();
+}
+
+function renderizarFicha() {
+    const div = document.getElementById('conteudoFicha');
+    let html = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div><p class="text-sm text-gray-500">Nome</p><p class="font-bold text-lg">${clienteAtual.nome}</p></div>
+            <div><p class="text-sm text-gray-500">Contrato</p><p class="font-bold">${clienteAtual.contrato}</p></div>
+            <div><p class="text-sm text-gray-500">Endereço</p><p>${clienteAtual.endereco||'—'}</p></div>
+            <div><p class="text-sm text-gray-500">Ponto de Referência</p><p>${clienteAtual.referencia||'—'}</p></div>
+            <div><p class="text-sm text-gray-500">Telefone</p><p>${clienteAtual.telefone||'—'}</p></div>
+            <div><p class="text-sm text-gray-500">Valor da Parcela</p><p class="font-bold text-lg text-cobrador">R$ ${clienteAtual.valor.toFixed(2)}</p></div>
+        </div>
+        <h4 class="font-bold mb-3 border-t pt-3">📅 Parcelas e Vencimentos</h4>
+    `;
+    if (!clienteAtual.parcelas?.length) {
+        html += '<p class="text-gray-500">Nenhuma parcela cadastrada pelo administrador.</p>';
+    } else {
+        html += '<div class="space-y-3">';
+        [...clienteAtual.parcelas].sort((a,b)=>new Date(b.dataVenc)-new Date(a.dataVenc)).forEach(p=>{
+            const hoje = new Date(), venc = new Date(p.dataVenc);
+            const atrasado = !p.pago && venc < hoje;
+            let st = 'Pendente', cls = 'status-pendente', btnTexto = '✅ DAR BAIXA';
+            if (p.formaPagto === 'pix') { cls = 'status-pix'; st = '💜 Pago via PIX'; }
+            else if (p.formaPagto === 'dinheiro') { cls = 'status-pago'; st = '💵 Pago em Dinheiro'; }
+            else if (p.pago) { cls = 'status-pago'; st = `✅ Pago em ${p.dataPagamento.split('-').reverse().join('/')}`; }
+            else if (atrasado) { st='⚠️ EM ATRASO'; cls='status-atrasado'; }
+
+            html += `
+            <div class="border rounded p-3">
+                <div class="flex flex-col gap-2">
+                    <div>
+                        📅 Venc: ${p.dataVenc.split('-').reverse().join('/')} — 
+                        <strong class="text-lg">R$ ${p.valor.toFixed(2)}</strong>
+                        <span class="ml-2 px-2 py-0.5 rounded text-sm ${cls}">${st}</span>
+                    </div>
+                    
+                    ${!p.pago ? `
+                    <div class="bg-gray-50 p-3 rounded mt-2">
+                        <p class="font-medium text-sm mb-2">Registrar Pagamento:</p>
+                        <label class="text-sm">Forma de Pagamento</label>
+                        <select id="fp_${p.id}" class="campo" onchange="mostrarObsPix(${p.id})">
+                            <option value="">-- Selecione --</option>
+                            <option value="dinheiro">💵 Dinheiro</option>
+                            <option value="pix">💜 PIX</option>
+                            <option value="cartao">💳 Cartão</option>
+                        </select>
+                        <div id="obsPix_${p.id}" class="hidden texto-observacao">
+                            <p class="font-medium text-pix">💜 Observação PIX</p>
+                            <textarea id="txtObsPix_${p.id}" class="campo" rows="2" placeholder="Chave PIX, comprovante, nome do titular..."></textarea>
+                        </div>
+                        <button onclick="marcarPago(${p.id})" class="btn btn-verde w-full mt-2">✅ Confirmar Pagamento</button>
+                    </div>
+                    ` : `
+                    ${p.observacaoPagto ? `
+                    <div class="texto-observacao">
+                        <p class="font-medium text-sm">📝 Observação:</p>
+                        <p class="text-sm">${p.observacaoPagto}</p>
+                    </div>
+                    ` : ''}
+                    <button onclick="marcarPago(${p.id})" class="btn btn-cinza py-2 px-3 text-sm mt-2">↩ Desmarcar</button>
+                    `}
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+    }
+    div.innerHTML = html;
+}
+
+function mostrarObsPix(idParcela) {
+    const sel = document.getElementById(`fp_${idParcela}`);
+    const divObs = document.getElementById(`obsPix_${idParcela}`);
+    divObs.classList.toggle('hidden', sel.value !== 'pix');
+}
+
+function marcarPago(idParcela) {
+    carregarDados();
+    clienteAtual = dados.clientes.find(c=>c.id===clienteAtual.id);
+    const p = clienteAtual.parcelas.find(x=>x.id===idParcela);
+    
+    if (p.pago) {
+        // Desmarcar
+        p.pago = false; 
+        p.dataPagamento = null;
+        p.formaPagto = null;
+        p.observacaoPagto = '';
+        dados.movimentos = dados.movimentos.filter(m=>!(m.descricao===`Pagamento: ${clienteAtual.nome} - Parcela` && m.valor===p.valor));
+    } else {
+        // Marcar como pago
+        const formaPagto = document.getElementById(`fp_${idParcela}`).value || 'dinheiro';
+        const obsPix = document.getElementById(`txtObsPix_${idParcela}`)?.value?.trim() || '';
+        
+        p.pago = true;
+        p.dataPagamento = new Date().toISOString().split('T')[0];
+        p.formaPagto = formaPagto;
+        p.observacaoPagto = obsPix;
+        
+        dados.movimentos.push({
+            data: p.dataPagamento,
+            descricao: `Pagamento: ${clienteAtual.nome} - Parcela (${formaPagto})`,
+            tipo: 'entrada',
+            valor: p.valor
+        });
+    }
+    salvarDados();
+    renderizarFicha();
+    alert('✅ Pagamento registrado! Administrador já vê no sistema.');
+}
+
+// ========== RELATAR GASTOS ==========
+function registrarGasto() {
+    const tipo = document.getElementById('gastoTipo').value;
+    const desc = document.getElementById('gastoDesc').value.trim();
+    const valor = parseFloat(document.getElementById('gastoValor').value);
+    const data = document.getElementById('gastoData').value;
+    const obs = document.getElementById('gastoObs').value.trim();
+    
+    if (!tipo) return alert('Selecione o tipo de gasto!');
+    if (!desc) return alert('Preencha a justificativa!');
+    if (!valor || valor <= 0) return alert('Informe o valor!');
+    if (!data) return alert('Informe a data!');
+    
+    dados.gastosCobradores.push({
+        id: Date.now(),
+        cobradorId: usuario.id,
+        cobradorNome: usuario.nome,
+        data,
+        tipo,
+        descricao: desc,
+        valor,
+        observacao: obs,
+        status: 'pendente' // pendente | aprovado | rejeitado
+    });
+    
+    // Limpar
+    document.getElementById('gastoTipo').value = '';
+    document.getElementById('gastoDesc').value = '';
+    document.getElementById('gastoValor').value = '';
+    document.getElementById('gastoObs').value = '';
+    
+    salvarDados();
+    listarMeusGastos();
+    alert('✅ Gasto enviado! Aguardando aprovação do administrador.');
+}
+
+function listarMeusGastos() {
+    carregarDados();
+    const div = document.getElementById('listaMeusGastos');
+    const meusGastos = dados.gastosCobradores.filter(g => g.cobradorId === usuario.id).reverse();
+    
+    if (!meusGastos.length) return div.innerHTML = '<p class="text-gray-500">Nenhum gasto enviado.</p>';
+    
+    div.innerHTML = '<div class="space-y-3">';
+    meusGastos.forEach(g => {
+        let corStatus = 'bg-yellow-50 text-yellow-700';
+        let textoStatus = '⏳ Aguardando Aprovação';
+        if (g.status === 'aprovado') { corStatus = 'bg-green-50 text-green-700'; textoStatus = '✅ Aprovado'; }
+        if (g.status === 'rejeitado') { corStatus = 'bg-red-50 text-red-700'; textoStatus = '❌ Rejeitado'; }
+        
+        div.innerHTML += `
+        <div class="border rounded p-3">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <p class="font-bold">${g.tipo}</p>
+                    <p class="text-sm text-gray-500">${g.data.split('-').reverse().join('/')}</p>
+                </div>
+                <span class="px-2 py-1 rounded text-xs font-medium ${corStatus}">${textoStatus}</span>
+            </div>
+            <p class="text-sm mb-1"><strong>Justificativa:</strong> ${g.descricao}</p>
+            ${g.observacao ? `<p class="text-sm text-gray-600 mb-1"><strong>Obs:</strong> ${g.observacao}</p>` : ''}
+            <p class="font-bold text-lg text-cobrador">R$ ${g.valor.toFixed(2)}</p>
+        </div>`;
+    });
+    div.innerHTML += '</div>';
+}
+
+carregarDados();
+</script>
+</body>
+</html>
